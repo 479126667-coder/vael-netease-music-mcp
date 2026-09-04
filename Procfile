@@ -1,1 +1,1 @@
-web: python3 -m server.mcp-server
+web: python server/mcp-server/server.py --port $PORT
