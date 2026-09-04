@@ -454,16 +454,27 @@ class MCPHandler(http.server.BaseHTTPRequestHandler):
         else:
             self._json_response({"error": "Not found"}, 404)
     def do_POST(self):
-        length = int(self.headers.get('Content-Length', 0))
-        body = json.loads(self.rfile.read(length)) if length else {}
+        try:
+            length = int(self.headers.get('Content-Length', 0))
+            if length == 0:
+                self._json_response({"error": "Empty request body"}, 400)
+                return
+            body = json.loads(self.rfile.read(length).decode('utf-8'))
+        except json.JSONDecodeError as e:
+            self._json_response({"error": f"Invalid JSON: {str(e)}"}, 400)
+            return
+        except Exception as e:
+            self._json_response({"error": f"Request read error: {str(e)}"}, 400)
+            return
+    
         method = body.get('method', '')
         req_id = body.get('id')
-        # Notifications and requests without id get 204 (no response body)
-        if method.startswith('notifications/') or req_id is None:
-            self.send_response(204)
-            self._cors()
-            self.end_headers()
+    
+        # 如果 id 为 None，返回 400 而不是 204
+        if req_id is None:
+            self._json_response({"error": "Missing 'id' field in request"}, 400)
             return
+    
         if method == 'initialize':
             result = {"protocolVersion": "2025-03-26", "capabilities": {"tools": {"listChanged": False}},
                       "serverInfo": {"name": "netease-music-mcp", "version": "3.1.0"}}
@@ -485,6 +496,7 @@ class MCPHandler(http.server.BaseHTTPRequestHandler):
                 result = {"content": [{"type": "text", "text": f"Unknown tool: {tool_name}"}], "isError": True}
         else:
             result = {"error": {"code": -32601, "message": f"Unknown method: {method}"}}
+    
         response = {"jsonrpc": "2.0", "id": req_id, "result": result}
         self._json_response(response)
     def _handle_sse(self):
