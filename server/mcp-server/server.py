@@ -13,7 +13,8 @@ from http.server import HTTPServer
 # --- Configuration ---
 NETEASE_COOKIE = os.environ.get("NETEASE_COOKIE", "")
 NETEASE_CSRF = os.environ.get("NETEASE_CSRF", "")
-PORT = int(os.environ.get("MCP_PORT", "3456"))
+# 优先使用 Railway 注入的 PORT，如果不存在则使用 MCP_PORT，最后 fallback 到 3456
+PORT = int(os.environ.get("PORT", os.environ.get("MCP_PORT", 3456)))
 LOG_LEVEL = os.environ.get("LOG_LEVEL", "INFO").upper()
 SESSION_ID = str(uuid.uuid4())
 
@@ -343,8 +344,6 @@ def get_liked_songs(params):
         return {"error": "Failed to get liked songs", "detail": result}
     ids = result.get('ids', [])
     return {"count": len(ids), "song_ids": ids[:200], "note": f"Showing first 200 of {len(ids)} liked songs" if len(ids) > 200 else None}
-
-
 
 # --- Tool Registry ---
 TOOLS = [
