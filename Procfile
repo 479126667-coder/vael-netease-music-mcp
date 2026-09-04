@@ -1,1 +1,1 @@
-web: python -m server.mcp-server
+web: python3 -m server.mcp-server
